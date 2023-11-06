@@ -60,6 +60,7 @@ export default class ViewQuiz extends React.Component {
             console.log(er);
         })
     }
+    
 
     render() {
         return !this.state.isLoading ? (

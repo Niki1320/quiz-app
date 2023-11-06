@@ -50,6 +50,14 @@ const QuizSchema = new Schema({
         required: true
     },
     scores: {type: Array, default: []},
+    useTimer: {
+        type: Boolean,
+        default: false
+    },
+    quizTimer: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: new Date()

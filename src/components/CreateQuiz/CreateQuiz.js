@@ -75,30 +75,67 @@ export default class CreateQuiz extends React.Component {
        })
    }
 
-   saveQuiz = () => {
-       let quiz = {
-           mustBeSignedIn: this.state.mustBeSignedIn,
-           name: this.state.name,
-           questions: this.state.questions,
-           category: this.state.categoryVal,
-           imgUrl: this.state.imgUrl
-       }
-       axios.post('/api/quizzes/create', {quiz, createdBy: localStorage.getItem('_ID')}).then(res => {
-            if (res.data.success) {
-                this.setState({
-                    questions: [], 
-                    answers: [],
-                    categoryVal: "Math",
-                    showToast: true
-                });
-                setTimeout(() => {
-                    this.setState({showToast: false});
-                }, 3000);
-            }
-       }).catch(er => {
-           console.error(er);
-       })
-   }
+
+saveQuiz = () => {
+    if (this.state.questions.length === 0) {
+        alert("Please add at least one question before saving the quiz.");
+        return;
+    }
+
+    if (this.state.questions.some(ques => ques.answers.length < 2)) {
+        alert("Each question should have a minimum of two options (answers).");
+        return;
+    }
+
+    if (!this.isValidImageUrl(this.state.imgUrl)) {
+        alert("Please provide a valid image URL.");
+        return;
+    }
+
+    // Continue with saving the quiz if all checks pass
+    this.saveQuizData();
+}
+
+isValidImageUrl = (url) => {
+    if (!url) {
+        return true; // No image URL provided, so it's considered valid
+    }
+
+    const img = new Image();
+    img.src = url;
+
+    return img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
+}
+
+
+saveQuizData = () => {
+    let quiz = {
+        mustBeSignedIn: this.state.mustBeSignedIn,
+        name: this.state.name,
+        questions: this.state.questions,
+        category: this.state.categoryVal,
+        imgUrl: this.state.imgUrl,
+        useTimer: this.state.useTimer, // Include whether to use timer in the quiz object
+        quizTimer: this.state.useTimer ? this.state.quizTimer : null, // Include the quiz timer value if useTimer is true
+    };
+
+    axios.post('/api/quizzes/create', { quiz, createdBy: localStorage.getItem('_ID') }).then(res => {
+        if (res.data.success) {
+            this.setState({
+                questions: [],
+                answers: [],
+                categoryVal: "Math",
+                showToast: true
+            });
+            setTimeout(() => {
+                this.setState({ showToast: false });
+            }, 3000);
+        }
+    }).catch(er => {
+        console.error(er);
+    });
+}
+
 
    render() {
        return (
@@ -111,7 +148,7 @@ export default class CreateQuiz extends React.Component {
                <div className="main">
                    <div className="header">Create Quiz</div>
                    <div className="form card">
-                       <input className="input" onChange={e => this.setState({name: e.target.value})} value={this.state.name} placeholder="Quiz Name" />
+                       <input className="input" onChange={e => this.setState({name: e.target.value})} value={this.state.name} placeholder="Quiz Name" required/>
                        <br></br>
                        <input className="input" onChange={e => this.setState({imgUrl: e.target.value})} value={this.state.imgUrl} placeholder="Img url" />
                        <br></br>
@@ -124,6 +161,30 @@ export default class CreateQuiz extends React.Component {
                            <span>Must be logged in to take</span>
                            <input checked={this.state.mustBeSignedIn} onChange={this.selectPrivate} type="checkbox" placeholder="Must be logged in to take" />
                        </div>
+
+                       <div className="checkbox">
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={this.state.useTimer}
+                        onChange={() => this.setState({ useTimer: !this.state.useTimer })}
+                    />
+                    Use Timer for the whole quiz
+                </label>
+            </div>
+
+            {/* Show timer input fields only when the checkbox is checked */}
+            {this.state.useTimer && (
+                <div>
+                    <label>Quiz Timer (seconds):</label>
+                    <input
+                        type="number"
+                        value={this.state.quizTimer}
+                        onChange={(e) => this.setState({ quizTimer: parseInt(e.target.value, 10) })}
+                    />
+                </div>
+            )}
+
 
                        {this.state.questions.map((ques, idx) => (
                            <div className="question" key={idx}>
